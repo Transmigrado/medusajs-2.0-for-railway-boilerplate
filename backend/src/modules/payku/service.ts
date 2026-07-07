@@ -152,19 +152,38 @@ class PaykuProviderService extends AbstractPaymentProvider<Options> {
       throw new Error('Payku requires a payment session id to create a transaction.')
     }
 
+    const email = context?.customer?.email
+    if (!email) {
+      throw new Error('Payku requires the customer email; none was available on this cart.')
+    }
+
+    const requestBody = {
+      email,
+      order: sessionId,
+      subject: 'Coffee Vogue order',
+      amount: this.toAmount(amount),
+      currency: currency_code.toUpperCase(),
+      payment: this.options_.paymentMethod ?? 99,
+      urlreturn: this.options_.urlReturn,
+      urlnotify: this.options_.urlNotify,
+    }
+
     const response = await this.fetchPayku<PaykuTransactionResponse>('/api/transaction', {
       method: 'POST',
-      body: JSON.stringify({
-        email: context?.customer?.email,
-        order: sessionId,
-        subject: 'Coffee Vogue order',
-        amount: this.toAmount(amount),
-        currency: currency_code.toUpperCase(),
-        payment: this.options_.paymentMethod ?? 99,
-        urlreturn: this.options_.urlReturn,
-        urlnotify: this.options_.urlNotify,
-      }),
+      body: JSON.stringify(requestBody),
     })
+
+    // Payku can respond 200 OK with a "failed"/incomplete body instead of a non-2xx
+    // status (e.g. invalid amount/email), so this can't just be inferred from `fetchPayku`
+    // not throwing — without an id/url there's nothing usable to hand to the payer.
+    if (!response.id || !response.url) {
+      this.logger_.error(
+        `Payku did not return a usable transaction. Request: ${JSON.stringify(requestBody)} — Response: ${JSON.stringify(response)}`
+      )
+      throw new Error(
+        `Payku could not create a transaction (status: ${response.status ?? 'unknown'}).`
+      )
+    }
 
     return {
       id: response.id,
@@ -243,17 +262,23 @@ class PaykuProviderService extends AbstractPaymentProvider<Options> {
   async getWebhookActionAndData(
     payload: ProviderWebhookPayload['payload']
   ): Promise<WebhookActionResult> {
-    const body = payload.data as { order?: string; transaction_id?: string; id?: string }
+    // Payku's notify body: { transaction_id, payment_key, transaction_key,
+    // verification_key, order, status }. GET /api/transaction/{id} only accepts
+    // payment_key or transaction_key as a lookup id — NOT transaction_id, despite
+    // the name (that field is Payku's own internal numeric id).
+    const body = payload.data as {
+      order?: string
+      payment_key?: string
+      transaction_key?: string
+    }
     const sessionId = body.order
-    const transactionId = body.transaction_id ?? body.id
-    if (!sessionId || !transactionId) {
+    const lookupId = body.payment_key ?? body.transaction_key
+    if (!sessionId || !lookupId) {
       return { action: PaymentActions.NOT_SUPPORTED }
     }
 
     // Don't trust the webhook body's status directly; re-verify against Payku.
-    const detail = await this.fetchPayku<PaykuTransactionDetail>(
-      `/api/transaction/${transactionId}`
-    )
+    const detail = await this.fetchPayku<PaykuTransactionDetail>(`/api/transaction/${lookupId}`)
     const amount = new BigNumber(detail.amount)
 
     switch (detail.status) {
