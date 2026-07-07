@@ -25,9 +25,10 @@ class FirebaseAuthProviderService extends AbstractAuthModuleProvider {
   protected logger_: Logger
   protected options_: Options
 
-  constructor({ logger }: InjectedDependencies, options: Options) {
-    super(...arguments)
-    this.logger_ = logger
+  constructor(container: InjectedDependencies, options: Options) {
+    // @ts-expect-error - AbstractAuthModuleProvider's type declaration omits its constructor signature.
+    super(container, options)
+    this.logger_ = container.logger
     this.options_ = options
 
     if (!getApps().length) {
