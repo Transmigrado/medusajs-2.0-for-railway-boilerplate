@@ -22,7 +22,11 @@ import {
   MINIO_BUCKET,
   MEILISEARCH_HOST,
   MEILISEARCH_ADMIN_KEY,
-  FIREBASE_PROJECT_ID
+  FIREBASE_PROJECT_ID,
+  PAYKU_PUBLIC_TOKEN,
+  PAYKU_PRIVATE_TOKEN,
+  PAYKU_BASE_URL,
+  PAYKU_URL_RETURN
 } from 'lib/constants';
 
 loadEnv(process.env.NODE_ENV, process.cwd());
@@ -141,19 +145,31 @@ const medusaConfig = {
         ]
       }
     }] : []),
-    ...(STRIPE_API_KEY && STRIPE_WEBHOOK_SECRET ? [{
+    ...((STRIPE_API_KEY && STRIPE_WEBHOOK_SECRET) || (PAYKU_PUBLIC_TOKEN && PAYKU_PRIVATE_TOKEN) ? [{
       key: Modules.PAYMENT,
       resolve: '@medusajs/payment',
       options: {
         providers: [
-          {
+          ...(STRIPE_API_KEY && STRIPE_WEBHOOK_SECRET ? [{
             resolve: '@medusajs/payment-stripe',
             id: 'stripe',
             options: {
               apiKey: STRIPE_API_KEY,
               webhookSecret: STRIPE_WEBHOOK_SECRET,
             },
-          },
+          }] : []),
+          ...(PAYKU_PUBLIC_TOKEN && PAYKU_PRIVATE_TOKEN ? [{
+            resolve: './src/modules/payku',
+            id: 'payku',
+            options: {
+              publicToken: PAYKU_PUBLIC_TOKEN,
+              privateToken: PAYKU_PRIVATE_TOKEN,
+              baseUrl: PAYKU_BASE_URL,
+              urlReturn: PAYKU_URL_RETURN,
+              // Medusa's built-in webhook listener route for this provider.
+              urlNotify: `${BACKEND_URL}/hooks/payment/payku_payku`,
+            },
+          }] : []),
         ],
       },
     }] : [])

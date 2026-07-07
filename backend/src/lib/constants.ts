@@ -96,6 +96,16 @@ export const MEILISEARCH_ADMIN_KEY = process.env.MEILISEARCH_ADMIN_KEY;
 export const FIREBASE_PROJECT_ID = process.env.FIREBASE_PROJECT_ID;
 
 /**
+ * (optional) Payku payment provider - public/private tokens from the Payku dashboard
+ */
+export const PAYKU_PUBLIC_TOKEN = process.env.PAYKU_PUBLIC_TOKEN;
+export const PAYKU_PRIVATE_TOKEN = process.env.PAYKU_PRIVATE_TOKEN;
+// Defaults to Payku's sandbox server; set to https://app.payku.cl to go live.
+export const PAYKU_BASE_URL = process.env.PAYKU_BASE_URL ?? 'https://des.payku.cl';
+// Where the payer's browser is redirected back to after paying on Payku's hosted page.
+export const PAYKU_URL_RETURN = process.env.PAYKU_URL_RETURN;
+
+/**
  * Worker mode
  */
 export const WORKER_MODE =
