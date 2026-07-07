@@ -1,4 +1,4 @@
-import { loadEnv, Modules, defineConfig } from '@medusajs/utils';
+import { loadEnv, Modules, ContainerRegistrationKeys, defineConfig } from '@medusajs/utils';
 import {
   ADMIN_CORS,
   AUTH_CORS,
@@ -21,7 +21,8 @@ import {
   MINIO_SECRET_KEY,
   MINIO_BUCKET,
   MEILISEARCH_HOST,
-  MEILISEARCH_ADMIN_KEY
+  MEILISEARCH_ADMIN_KEY,
+  FIREBASE_PROJECT_ID
 } from 'lib/constants';
 
 loadEnv(process.env.NODE_ENV, process.cwd());
@@ -37,7 +38,10 @@ const medusaConfig = {
       authCors: AUTH_CORS,
       storeCors: STORE_CORS,
       jwtSecret: JWT_SECRET,
-      cookieSecret: COOKIE_SECRET
+      cookieSecret: COOKIE_SECRET,
+      authMethodsPerActor: {
+        customer: FIREBASE_PROJECT_ID ? ['emailpass', 'firebase-auth'] : ['emailpass']
+      }
     },
     build: {
       rollupOptions: {
@@ -50,6 +54,26 @@ const medusaConfig = {
     disable: SHOULD_DISABLE_ADMIN,
   },
   modules: [
+    {
+      key: Modules.AUTH,
+      resolve: '@medusajs/medusa/auth',
+      dependencies: [Modules.CACHE, ContainerRegistrationKeys.LOGGER],
+      options: {
+        providers: [
+          {
+            resolve: '@medusajs/medusa/auth-emailpass',
+            id: 'emailpass'
+          },
+          ...(FIREBASE_PROJECT_ID ? [{
+            resolve: './src/modules/firebase-auth',
+            id: 'firebase-auth',
+            options: {
+              projectId: FIREBASE_PROJECT_ID
+            }
+          }] : [])
+        ]
+      }
+    },
     {
       key: Modules.FILE,
       resolve: '@medusajs/file',

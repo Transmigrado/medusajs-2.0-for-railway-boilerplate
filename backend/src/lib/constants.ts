@@ -91,6 +91,11 @@ export const MEILISEARCH_HOST = process.env.MEILISEARCH_HOST;
 export const MEILISEARCH_ADMIN_KEY = process.env.MEILISEARCH_ADMIN_KEY;
 
 /**
+ * Firebase project id, used by the firebase-auth provider to verify ID tokens
+ */
+export const FIREBASE_PROJECT_ID = process.env.FIREBASE_PROJECT_ID;
+
+/**
  * Worker mode
  */
 export const WORKER_MODE =
