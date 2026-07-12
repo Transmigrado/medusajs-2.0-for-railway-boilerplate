@@ -53,10 +53,10 @@ export function createMediaLinkHandlers({ entity, entityIdField, moduleKey }: Me
       await link.dismiss([
         { [moduleKey]: { [entityIdField]: req.params.id }, [MEDIA_MODULE]: { media_id: existingMediaId } },
       ])
-      await mediaModuleService.deleteMedias([existingMediaId])
+      await mediaModuleService.deleteMedia([existingMediaId])
     }
 
-    const media = await mediaModuleService.createMedias({ url, width, height })
+    const media = await mediaModuleService.createMedia({ url, width, height })
     await link.create([
       { [moduleKey]: { [entityIdField]: req.params.id }, [MEDIA_MODULE]: { media_id: media.id } },
     ])
@@ -73,7 +73,7 @@ export function createMediaLinkHandlers({ entity, entityIdField, moduleKey }: Me
       await link.dismiss([
         { [moduleKey]: { [entityIdField]: req.params.id }, [MEDIA_MODULE]: { media_id: existingMediaId } },
       ])
-      await mediaModuleService.deleteMedias([existingMediaId])
+      await mediaModuleService.deleteMedia([existingMediaId])
     }
 
     res.status(200).json({ media: null })
