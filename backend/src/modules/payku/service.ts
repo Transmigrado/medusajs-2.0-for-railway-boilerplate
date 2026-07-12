@@ -152,7 +152,11 @@ class PaykuProviderService extends AbstractPaymentProvider<Options> {
       throw new Error('Payku requires a payment session id to create a transaction.')
     }
 
-    const email = context?.customer?.email
+    // context.customer is only populated by Medusa's core workflow for logged-in
+    // customers (it's keyed off req.auth_context, see the payment-sessions route
+    // override); guest carts fall back to the email the route resolved from the
+    // cart itself and passed through as data.email.
+    const email = context?.customer?.email ?? (data?.email as string | undefined)
     if (!email) {
       throw new Error('Payku requires the customer email; none was available on this cart.')
     }
