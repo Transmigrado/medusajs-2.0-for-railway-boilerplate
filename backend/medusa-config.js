@@ -62,6 +62,9 @@ const medusaConfig = {
       resolve: './src/modules/app-config',
     },
     {
+      resolve: './src/modules/media',
+    },
+    {
       key: Modules.AUTH,
       resolve: '@medusajs/medusa/auth',
       dependencies: [Modules.CACHE, ContainerRegistrationKeys.LOGGER],
